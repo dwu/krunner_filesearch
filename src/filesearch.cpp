@@ -30,30 +30,45 @@
 #include <KRun>
 
 #include <Baloo/Query>
-#include <Baloo/IndexerConfig>
 #include <KRunner/QueryMatch>
 
-#include <QDebug>
+#include <QAction>
+#include <QIcon>
 #include <QDir>
 #include <QUrl>
-#include <QMimeData>
 #include <QMimeDatabase>
+
+K_EXPORT_PLASMA_RUNNER(filesearch, FileSearchRunner)
+
+static const QString s_openFileId = QStringLiteral("openFile");
+static const QString s_openFolderId = QStringLiteral("openFolder");
 
 FileSearchRunner::FileSearchRunner(QObject *parent, const QVariantList &args)
     : Plasma::AbstractRunner(parent, args)
 {
-    setIgnoredTypes(
-        Plasma::RunnerContext::NetworkLocation |
-        Plasma::RunnerContext::Executable |
-        Plasma::RunnerContext::ShellCommand
-    );
-    setSpeed(Plasma::AbstractRunner::SlowSpeed);
+    mIcon = QIcon::fromTheme("utilities-terminal");
+    setObjectName(QString("filesearch"));
+    setSpeed(NormalSpeed);
+    setPriority(HighestPriority);
+
+    auto comment = i18n("Looks for a file matching :q:. Pressing ENTER opens the file.");
+    setDefaultSyntax(Plasma::RunnerSyntax(QString(":q:"), comment));
 }
 
 FileSearchRunner::~FileSearchRunner()
 {
 }
 
+void FileSearchRunner::init()
+{
+    QAction* openFolderAction = addAction(s_openFolderId, QIcon::fromTheme(QStringLiteral("document-open-folder")), i18n("Open Folder"));
+    openFolderAction->setData(s_openFolderId);
+    actionList << openFolderAction;
+
+    QAction* openFileAction = addAction(s_openFileId, QIcon::fromTheme(QStringLiteral("text-x-plain")), i18n("Open File"));
+    openFileAction->setData(s_openFileId);
+    actionList << openFileAction;
+}
 
 void FileSearchRunner::match(Plasma::RunnerContext &context)
 {
@@ -61,40 +76,46 @@ void FileSearchRunner::match(Plasma::RunnerContext &context)
         return;
     }
 
+    if (!context.isValid()) {
+        return;
+    }
+
     Baloo::Query query;
     query.setSearchString(context.query());
-    query.setType("");
-    query.setLimit(10);
-
-    Baloo::ResultIterator it = query.exec();
+    query.setLimit(-1);
 
     QMimeDatabase mimeDb;
+    QList<Plasma::QueryMatch> matches;
 
-    float relevance = 0.8;
+    Baloo::ResultIterator it = query.exec();
     while (it.next()) {
         QString localUrl = it.filePath();
         const QUrl url = QUrl::fromLocalFile(localUrl);
 
-        if (!localUrl.contains(context.query(), Qt::CaseInsensitive)) {
-            return;
+        // Skip result if not all query tokens found in baloo match
+        QStringList queryTokens = context.query().split(' ', QString::SkipEmptyParts);
+        bool allTokensFound = true;
+        foreach (const QString &queryToken, queryTokens) {
+            if (!localUrl.contains(queryToken, Qt::CaseInsensitive)) {
+                allTokensFound = false;
+                break;
+            }
         }
 
-        Plasma::QueryMatch match;
+        if (!allTokensFound) {
+            continue;
+        }
+
+        // Prepare and return match
+        Plasma::QueryMatch match(this);
 
         match.setId(it.filePath());
-        match.setData(it.filePath());
+        match.setData(url);
         match.setText(url.fileName());
-
         match.setIconName(mimeDb.mimeTypeForFile(localUrl).iconName());
         match.setMatchCategory("File");
-
-        if (localUrl.compare(context.query(), Qt::CaseInsensitive)) {
-            match.setRelevance(1.0);
-            match.setType(Plasma::QueryMatch::ExactMatch);
-        } else {
-            match.setRelevance(relevance);
-            match.setType(Plasma::QueryMatch::PossibleMatch);
-        }
+        match.setRelevance(1);
+        match.setType(Plasma::QueryMatch::ExactMatch);
 
         QString folderPath = url.adjusted(QUrl::RemoveFilename | QUrl::StripTrailingSlash).toLocalFile();
         if (folderPath.startsWith(QDir::homePath())) {
@@ -102,23 +123,37 @@ void FileSearchRunner::match(Plasma::RunnerContext &context)
         }
 
         match.setSubtext(folderPath);
-        relevance -= 0.05;
 
-        context.addMatch(match);
+        matches.append(match);
     }
+
+    context.addMatches(matches);
 }
 
 void FileSearchRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match)
 {
     Q_UNUSED(context)
 
-    const QUrl url = QUrl::fromLocalFile(match.data().toString());
-    KRun *opener = new KRun(url, 0);
-    opener->setRunExecutables(false);
+    const QUrl url = match.data().toUrl();
+    if (match.selectedAction() != NULL) {
+        const auto action = match.selectedAction()->data();
+        if (action == s_openFileId) {
+            KRun *opener = new KRun(url, 0);
+            opener->setRunExecutables(false);
+        } else if (action == s_openFolderId) {
+            QFileInfo fi(url.toLocalFile());
+            KRun *opener = new KRun(QUrl::fromLocalFile(fi.absolutePath()), 0);
+            opener->setRunExecutables(false);
+        }
+    }
 }
 
-K_EXPORT_PLASMA_RUNNER(FileSearchRunner, FileSearchRunner)
+QList<QAction *> FileSearchRunner::actionsForMatch(const Plasma::QueryMatch &match)
+{
+    Q_UNUSED(match)
 
-// needed for the QObject subclass declared as part of K_EXPORT_PLASMA_RUNNER
+    return actionList;
+}
+
 #include "filesearch.moc"
 

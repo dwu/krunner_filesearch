@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=FileSearch
-Comment=Find file by Name
+Comment=Find file by name
 Icon=
 
 X-KDE-ServiceTypes=Plasma/Runner
@@ -8,7 +8,8 @@ Type=Service
 X-KDE-Library=krunner_filesearch
 X-KDE-PluginInfo-Author=Daniel Wutke
 X-KDE-PluginInfo-Email=dwu.public@gmail.com
-X-KDE-PluginInfo-Name=krunner_filesearch
-X-KDE-PluginInfo-Version=0.1
+X-KDE-PluginInfo-Name=filesearch
+X-KDE-PluginInfo-Version=0.1.0
+X-KDE-PluginInfo-Website=https://github.com/dwu/krunner_filesearch
 X-KDE-PluginInfo-License=LGPL
 X-KDE-PluginInfo-EnabledByDefault=true

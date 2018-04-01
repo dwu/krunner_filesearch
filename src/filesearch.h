@@ -19,17 +19,25 @@
 #define KRUNNER_FILESEARCH_H
 
 #include <KRunner/AbstractRunner>
-#include <QHash>
+#include <QAction>
 
-class FileSearchRunner: public Plasma::AbstractRunner
+class FileSearchRunner : public Plasma::AbstractRunner
 {
     Q_OBJECT
 
 public:
     FileSearchRunner(QObject* parent, const QVariantList& args);
-    ~FileSearchRunner() override;
+    ~FileSearchRunner();
     void match(Plasma::RunnerContext &context) override;
     void run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) override;
+    QList<QAction *> actionsForMatch(const Plasma::QueryMatch &match) override;
+
+protected:
+    void init() override;
+
+private:
+    QIcon mIcon;
+    QList<QAction *> actionList;
 
 };
 
