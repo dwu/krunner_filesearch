@@ -48,8 +48,9 @@ FileSearchRunner::FileSearchRunner(QObject *parent, const QVariantList &args)
 {
     mIcon = QIcon::fromTheme("utilities-terminal");
     setObjectName(QString("filesearch"));
-    setSpeed(NormalSpeed);
-    setPriority(HighestPriority);
+
+    setSpeed(SlowSpeed);
+    setPriority(NormalPriority);
 
     auto comment = i18n("Looks for a file matching :q:. Pressing ENTER opens the file.");
     setDefaultSyntax(Plasma::RunnerSyntax(QString(":q:"), comment));
@@ -114,8 +115,8 @@ void FileSearchRunner::match(Plasma::RunnerContext &context)
         match.setText(url.fileName());
         match.setIconName(mimeDb.mimeTypeForFile(localUrl).iconName());
         match.setMatchCategory("File");
-        match.setRelevance(1);
-        match.setType(Plasma::QueryMatch::ExactMatch);
+        match.setRelevance(0.8);
+        match.setType(Plasma::QueryMatch::PossibleMatch);
 
         QString folderPath = url.adjusted(QUrl::RemoveFilename | QUrl::StripTrailingSlash).toLocalFile();
         if (folderPath.startsWith(QDir::homePath())) {
@@ -137,15 +138,15 @@ void FileSearchRunner::run(const Plasma::RunnerContext &context, const Plasma::Q
     const QUrl url = match.data().toUrl();
     if (match.selectedAction() != NULL) {
         const auto action = match.selectedAction()->data();
-        if (action == s_openFileId) {
-            KRun *opener = new KRun(url, 0);
-            opener->setRunExecutables(false);
-        } else if (action == s_openFolderId) {
+        if (action == s_openFolderId) {
             QFileInfo fi(url.toLocalFile());
             KRun *opener = new KRun(QUrl::fromLocalFile(fi.absolutePath()), 0);
             opener->setRunExecutables(false);
+            return;
         }
     }
+    KRun *opener = new KRun(url, 0);
+    opener->setRunExecutables(false);
 }
 
 QList<QAction *> FileSearchRunner::actionsForMatch(const Plasma::QueryMatch &match)
