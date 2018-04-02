@@ -73,7 +73,7 @@ void FileSearchRunner::init()
 
 void FileSearchRunner::match(Plasma::RunnerContext &context)
 {
-    if (context.query().length() < 3) {
+    if (context.query().length() < 5) {
         return;
     }
 
