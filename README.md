@@ -1,5 +1,11 @@
 # Baloo File Search KRunner
 
+## Install dependencies (example: Kubuntu)
+
+```bash
+sudo apt install cmake extra-cmake-modules libkf5runner-dev libkf5kio-dev baloo-kf5-dev
+```
+
 ## Build instructions
 
 ```bash
