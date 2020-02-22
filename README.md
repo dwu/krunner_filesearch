@@ -1,10 +1,9 @@
 # Baloo File Search KRunner
 
-## Install dependencies (example: Kubuntu)
+## Install dependencies
 
-```bash
-sudo apt install cmake extra-cmake-modules libkf5runner-dev libkf5kio-dev baloo-kf5-dev
-```
+- Kubuntu: `sudo apt install cmake extra-cmake-modules libkf5runner-dev libkf5kio-dev baloo-kf5-dev`
+- Solus Plasma: `sudo eopkg it kio-devel baloo-devel krunner-devel cmake extra-cmake-modules ki18n-devel`
 
 ## Build instructions
 
@@ -12,9 +11,9 @@ sudo apt install cmake extra-cmake-modules libkf5runner-dev libkf5kio-dev baloo-
 mkdir build
 cd build
 
-cmake ../${_srcname}-${pkgver} \
+cmake .. \
     -DCMAKE_INSTALL_PREFIX=$(kf5-config --prefix) \
-    -DQT_PLUGIN_INSTALL_DIR=$(kf5-config --qt-plugins) \
+    -DKDE_INSTALL_QTPLUGINDIR=$(kf5-config --qt-plugins) \
     -DCMAKE_BUILD_TYPE=Release
 
 make
